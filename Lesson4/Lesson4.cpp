@@ -9,15 +9,6 @@
 #include <memory>
 // cols = rows = 0 (mod 8)
 
-#define Rows_B 16
-#define Cols_B 16
-
-#define Rows_C 16
-#define Cols_C 16
-
-#define Rows_A 16
-#define Cols_A 16
-
 void mul_matrix(double* A, std::size_t cA, std::size_t rA, const double* B, std::size_t cB, std::size_t rB, const double* C, std::size_t cC, std::size_t rC)
 {
     assert(cB == rC);
@@ -77,16 +68,25 @@ void mul_matrix_256(double* A, std::size_t cA, std::size_t rA, const double* B, 
     }
 }
 
-//std::pair<std::vector<double>, std::vector<double>> get_perputation_matrix(size_t n) {
-//    std::vector<size_t> permut(n);
-//    for (size_t i = 0; i < n; ++i)
-//        permut[i] = (n - (i + 10)) % n;
-//    std::vector<double> vf(n * n), vi(n * n);
-//    for (size_t c = 0; c < n; ++c)
-//        for (size_t r = 0; r < n; ++r)
-//            vf[c * n + r] = vi[r * n + c] = 1;
-//    return std::pair<std::vector<double>, std::vector<double>>{ vf, vi };
-//}
+std::pair<std::vector<double>, std::vector<double>> get_matrix_pair(size_t n)
+{
+    std::vector<double> permut(n*n);
+    for (size_t c = 0; c < n; c++)
+        for (size_t r = 0; r < n; r++)
+            if (c == r) permut[c * n + r] = 1; else permut[c * n + r] = 0;
+    for (size_t i = 0; i < n; i++) {
+        permut[i * n + n - 1] = 0;
+        permut[i * n] = 0;
+    }
+    permut[n * n - n] = 1;
+    permut[n - 1] = 1;
+    std::vector<double> vf(n * n);
+    double num = 1;
+    for (size_t c = 0; c < n; c++)
+        for (size_t r = 0; r < n; r++)
+            vf[c * n + r] = num++;
+    return std::pair<std::vector<double>, std::vector<double>>{ vf, permut };
+}
 
 std::pair<std::vector<double>, std::vector<double>> get_permutation_matrix(size_t n)
 {
@@ -95,8 +95,10 @@ std::pair<std::vector<double>, std::vector<double>> get_permutation_matrix(size_
         permut[i] = (n - (1 + 10)) % n;
     std::vector<double> vf(n * n), vi(n * n);
     for (size_t c = 0; c < n; c++)
-        for (size_t r = 0; r < n; r++)
-            vf[c * n + r] = vi[r * n + c] = 1;
+        for (size_t r = 0; r < n; r++) {
+            vf[c * n + r] = 1;
+            vi[r * n + c] = 1;
+        }
     return std::pair<std::vector<double>, std::vector<double>>{ vf, vi };
 }
 
@@ -113,38 +115,14 @@ int main(int argc, char** argv)
         }
     };
 
-    int n = 128;
-    std::vector<double> A(n * n), D(n * n);
-    //double* A = (double*)malloc(Cols_A * Rows_A * sizeof(double));
-    //double* B = (double*)malloc(Cols_B * Rows_B * sizeof(double));
-    //double* C = (double*)malloc(Cols_C * Rows_C * sizeof(double));
+    int n = 64;
+    std::vector<double> A(n * n);
 
     auto [B, C] = get_permutation_matrix(n);
 
-    //auto A = std::make_unique<double[]>(n * n);
-    //mul_matrix(A.data(), n, n, B.data(), n, n, C.data(), n, n);
-    //for (size_t c = 0; c < n; ++c)
-    //    for (size_t r = 0; r < n; ++r)
-    //        if ((r! = c)! = A[c*n+r])
-
-    //for (size_t i = 0; i < Rows_B; i++)
-    //{
-    //    for (size_t j = 0; j < Cols_B; j++)
-    //    {
-    //        B[i * Rows_B + j] = (i == j);
-    //    }
-    //}
-    //for (size_t i = 0; i < Rows_C; i++)
-    //{
-    //    for (size_t j = 0; j < Cols_C; j++)
-    //    {
-    //        C[i * Rows_C + j] = (i == j);
-    //    }
-    //}
-
-    //show_matrix(B, Cols_B, Rows_B);
+    //show_matrix(B.data(), n, n);
     //std::cout << "*\n";
-    //show_matrix(C, Cols_C, Rows_C);
+    //show_matrix(C.data(), n, n);
     //std::cout << "=\n";
 
     for (size_t i = 0; i < 1 + 1; i++) {
@@ -152,18 +130,20 @@ int main(int argc, char** argv)
         for (size_t j = 0; j < 20; j++) {
             if (i > 0) {
                 auto t1 = std::chrono::steady_clock::now();
-                mul_matrix_256(A.data(), Cols_A, Rows_A, B.data(), Cols_B, Rows_B, C.data(), Cols_C, Rows_C);
+                mul_matrix_256(A.data(), n, n, B.data(), n, n, C.data(), n, n);
                 auto t2 = std::chrono::steady_clock::now();
                 std::cout << duration_cast<nanoseconds>(t2 - t1).count() << "\n";
             }
             else {
                 auto t1 = std::chrono::steady_clock::now();
-                mul_matrix(A.data(), Cols_A, Rows_A, B.data(), Cols_B, Rows_B, C.data(), Cols_C, Rows_C);
+                mul_matrix(A.data(), n, n, B.data(), n, n, C.data(), n, n);
                 auto t2 = std::chrono::steady_clock::now();
                 std::cout << duration_cast<nanoseconds>(t2 - t1).count() << "\n";
             }
         }
     }
+
+    //show_matrix(A.data(), n, n);
 
     return 0;
 }
