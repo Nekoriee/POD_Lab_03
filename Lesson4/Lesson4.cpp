@@ -115,7 +115,7 @@ int main(int argc, char** argv)
         }
     };
 
-    int n = 64;
+    int n = 256;
     std::vector<double> A(n * n);
 
     auto [B, C] = get_permutation_matrix(n);
